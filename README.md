@@ -1,6 +1,6 @@
 # Really Simple History
 
-##Note: The Really Simple History library was one of the first Ajax history and bookmarking frameworks, establishing this as an important area that Ajax applications needed to solve. It is not supported anymore and is superseded by other frameworks now. It is available here for archival purposes only.
+##Note: The Really Simple History library was one of the first Ajax history and bookmarking frameworks, establishing this as an important area that Ajax applications needed to solve. Experiences from it helped feed into HTML5. It is not supported anymore and is superseded by other frameworks now. It is available here for archival purposes only.
 
 ## What is This?
 
