@@ -47,24 +47,11 @@ support to your application: <code>dhtmlHistory</code> and
 and back button support to your application. The primary flow when working
 with RSH is as follows:
 
-<ol>
-  Initialize <code>dhtmlHistory</code>
-  Register your application as interested in being notified whenever the user
-  presses the back or forward buttons.
-  Determine the initial location of your application and initialize your
-  state accordingly.
-  As a user interacts with your AJAX application add history entries
-  to the <code>dhtmlHistory</code> object. The history entry specifies a new location,
-  such as <code>edit:somePage</code>, as well as some optional contextual data that
-  is associated with the new location. When you add a new history entry,
-  the RSH framework updates the browser's location bar with the new location,
-  added after a hash, such as <code>http://somesite.com/myapp#edit:somePage</code>.
-  If a user presses the back or forward buttons, the RSH framework will call
-  the history change callback you registered earlier, passing in the new
-  location as well as any history data that might have been associated with
-  this location by you. The browser's URL field will also jump between any
-  previous or next hash history entries.
-</ol>
+* Initialize <code>dhtmlHistory</code>
+* Register your application as interested in being notified whenever the user presses the back or forward buttons.
+* Determine the initial location of your application and initialize your state accordingly.
+* As a user interacts with your AJAX application add history entries to the <code>dhtmlHistory</code> object. The history entry specifies a new location, such as <code>edit:somePage</code>, as well as some optional contextual data that is associated with the new location. When you add a new history entry, the RSH framework updates the browser's location bar with the new location, added after a hash, such as <code>http://somesite.com/myapp#edit:somePage</code>.
+* If a user presses the back or forward buttons, the RSH framework will call the history change callback you registered earlier, passing in the new location as well as any history data that might have been associated with this location by you. The browser's URL field will also jump between any previous or next hash history entries.
 
 The chief idea behind RSH is that your application adds custom history
 events as a user interacts with the application; the framework itself uses the
