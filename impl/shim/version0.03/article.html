@@ -1,0 +1,650 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta name="generator" content=
+"HTML Tidy for Windows (vers 12 April 2005), see www.w3.org" />
+<title>AJAX: How to Handle Bookmarks and Back Buttons</title>
+<!-- keywords: ajax, dhtml, javascript, howto, 
+       tutorial, open source, free software, java,
+       xmlhttprequest, x, sarissa, css, html, 
+       example, source, code, document object model,
+       web, api, application, back button,
+       forward button, bookmarks, bookmarking,
+       history, free, article, dom -->
+<link rel="STYLESHEET" type="text/css" href=
+"http://www.oreillynet.com/styles/main.css" />
+<!-- Custom style used to highlight certain portions
+       of example source code as bold, surrounded by
+       em (emphasis) tags. -->
+
+<style type="text/css">
+/*<![CDATA[*/
+    code em { font-weight: bold; font-style: normal; }
+/*]]>*/
+</style>
+</head>
+<body>
+<h2>AJAX: How to Handle Bookmarks and Back Buttons</h2>
+<p>by <a href="http://www.oreillynet.com/pub/au/1388">Brad
+Neuberg</a><br />
+MM/DD/2005</p>
+<h3><a name="introduction" id="introduction">Introduction</a></h3>
+<p>This article presents an open source JavaScript library that
+finally brings bookmarking and back button support to AJAX
+applications. By the end of this tutorial developers will have a
+solution to an AJAX problem that not even <a href=
+"http://maps.google.com">Google Maps</a> or <a href=
+"http://www.gmail.com">Gmail</a> possesses: robust, usable
+bookmarking and back and forward behavior that works exactly like
+the rest of the web.</p>
+<p>"AJAX: How to Handle Bookmarks and Back Buttons" discusses the
+significant issues that AJAX applications currently face with
+bookmarks and the back button; delivers an open source library created
+exclusively for this article that solves these problems; and
+presents two complete working examples.</p>
+<h3><a name="problem" id="problem">The Problem</a></h3>
+<p>Bookmarks and the back button work great for traditional,
+multi-page web applications. As users surf web sites, their browsers'
+location bars update with new URLs that can be pasted into emails or
+bookmarked for later use. The back and forward buttons also
+function correctly and shuffle users between the pages they have
+visited.</p>
+<p>AJAX applications are unusual, however, in that they are
+sophisticated programs that live within a single web page. Browsers
+were not built for such beasts &#8212; they are trapped in the Stone Age
+when web applications involved pulling completely fresh pages on
+every mouse click.</p>
+<p>In such AJAX software as Gmail, the browser's location bar stays
+exactly the same as users select functions and change the
+application's state, making bookmarking into specific application
+views impossible. Further, if users press their back buttons to
+"undo" a previous action, they will find to their surprise that the
+browser completely leaves the web page.</p>
+<h3><a name="solution" id="solution">The Solution</a></h3>
+<p>The Really Simply History framework (RSH), created exclusively
+for this article, solves these issues. RSH is an open source
+JavaScript library that brings bookmarking and control over the
+back and forward buttons to AJAX applications. RSH is under a
+<a href="http://en.wikipedia.org/wiki/BSD_License">BSD license</a>,
+making it freely usable by both open source and commercial systems;
+is currently in beta; and works with Firefox 1.0, Netscape 7+, and
+Internet Explorer 6+. Safari is not currently supported <a href=
+"#footnote1">[1]</a>.</p>
+<p>Several AJAX frameworks currently exist <a href=
+"#footnote2">[2]</a> that help with bookmarking and history issues;
+however, all of these frameworks suffer from several important bugs
+<a href="#footnote3">[3]</a> due to their implementations. Further,
+many AJAX history frameworks are monolithically bundled into larger
+libraries, such as <a href="http://www.backbase.com/">Backbase</a>
+and <a href="http://www.dojotoolkit.org/">Dojo</a>; these
+frameworks introduce significantly different programming models for
+AJAX applications, forcing developers to adopt entirely new
+approaches to gain history functionality.</p>
+<p>In contrast, RSH is a simple module that can be included into
+existing AJAX systems. Further, the Really Simple History library
+uses techniques <a href="#footnote4">[4]</a> to avoid the bugs that
+affect other history frameworks.</p>
+<p>Really Simple History is straightforward and consists of two
+JavaScript classes, named <code>DhtmlHistory</code> and
+<code>HistoryStorage</code>. This article provides two full
+examples and explanations of working with both classes.</p>
+<p>The <code>DhtmlHistory</code> class provides a history
+abstraction for AJAX applications. AJAX pages <code>add()</code>
+history events to the browser, specifying new locations and
+associated history data. The <code>DhtmlHistory</code> class
+updates the browser's current URL using an anchor hash, such as
+<code>#new-location</code>, and associates history data with this
+new URL. AJAX applications register themselves as history
+listeners, and as the user navigates with the back and forward
+buttons, history events are fired that provide the browser's new
+location and any history data that was persisted with an
+<code>add()</code> call.</p>
+<p>The second class, named <code>HistoryStorage</code>, allows
+developers to store an arbitrary amount of saved history data. In
+normal pages when a user navigates to a new web site, the browser
+unloads and clears out all application and JavaScript state on the
+web page; if the user returns using the back button, all data is
+lost. The <code>HistoryStorage</code> class solves this problem
+through an API containing simple hash table methods such as
+<code>put()</code>, <code>get()</code>, and <code>hasKey()</code>.
+These methods allow developers to store an arbitrary amount of data
+after the user has left a web page; when the user returns using the
+back button the data can be accessed through the
+<code>HistoryStorage</code> class.</p>
+<h3><a name="example1" id="example1">Example 1</a></h3>
+<p>Let's jump right in with a simple example.</p>
+<p>First, any page that wishes to use the Really Simple History
+framework must include the following script blocks:</p>
+<pre>
+<code>&lt;!-- Load the Really Simple 
+     History framework --&gt;
+&lt;script type="text/javascript"
+        src="../lib/history/serializer.js"&gt;
+&lt;/script&gt;
+&lt;script type="text/javascript"
+        src="../lib/history/historyStorage.js"&gt;
+&lt;/script&gt;
+&lt;script type="text/javascript"
+        src="../lib/history/dhtmlHistory.js"&gt;
+&lt;/script&gt;
+</code>
+</pre>
+<p>DHTML History applications must also include a special file
+named <i>blank.html</i> in the same directory as their AJAX
+web page; this file is bundled with the Really Simple History
+framework and is needed by Internet Explorer.</p>
+<p>The RSH framework creates a global object named
+<code>dhtmlHistory</code> that is the entry point for manipulating
+the browser's history. The first step in working with
+<code>dhtmlHistory</code> is initializing the object after the page
+has finished loading:</p>
+<pre>
+<code>window.onload = initialize;
+    
+function initialize() {
+  // initialize the DHTML History
+  // framework
+  dhtmlHistory.initialize();
+</code>
+</pre>
+<p>Next, developers use the <code>dhtmlHistory.addListener()</code>
+method to subscribe to history change events. This method takes a
+single JavaScript callback function that will receive two arguments
+whenever a DHTML history change event has occurred: the new
+location of the page, and any optional history data that might be
+associated with this event:</p>
+<pre>
+<code>window.onload = initialize;
+    
+function initialize() {
+  // initialize the DHTML History
+  // framework
+  dhtmlHistory.initialize();
+  
+  <em>// subscribe to DHTML history change
+  // events
+  dhtmlHistory.addListener(historyChange);</em>
+</code>
+</pre>
+<p>The <code>historyChange()</code> method:</p>
+<pre>
+<code>/** Our callback to receive history change
+     events. */
+function historyChange(newLocation, 
+                       historyData) {
+  debug("A history change has occurred: "
+        + "newLocation="+newLocation
+        + ", historyData="+historyData, 
+        true);
+}
+</code>
+</pre>
+<p>Note that the <code>debug()</code> method is a utility function
+defined in this example's <a href=
+"examples/simple/src/simple-src.html">source file</a>.
+<code>debug()</code> simply prints a message into the web page; the
+second boolean argument, <code>true</code> in the code above,
+controls whether all pre-existing messages are cleared before the
+new debug message is printed.</p>
+<p>A developer adds history events using the <code>add()</code>
+method. Adding a history event involves specifying a new location
+for the history change, such as <code>"edit:SomePage"</code>, as
+well as providing an optional <code>historyData</code> value that
+will be stored with this event:</p>
+<pre>
+<code>window.onload = initialize;
+    
+function initialize() {
+  // initialize the DHTML History
+  // framework
+  dhtmlHistory.initialize();
+  
+  // subscribe to DHTML history change
+  // events
+  dhtmlHistory.addListener(historyChange);
+      
+  // if this is the first time we have
+  // loaded the page...
+  if (dhtmlHistory.isFirstLoad()) {
+    debug("Adding values to browser "
+          + "history", false);
+    <em>// start adding history
+    dhtmlHistory.add("helloworld", 
+                     "Hello World Data");
+    dhtmlHistory.add("foobar", 33);
+    dhtmlHistory.add("boobah", true);
+      
+    var complexObject = new Object();
+    complexObject.value1 = 
+                  "This is the first value";
+    complexObject.value2 = 
+                  "This is the second data";
+    complexObject.value3 = new Array();
+    complexObject.value3[0] = "array 1";
+    complexObject.value3[1] = "array 2";
+      
+    dhtmlHistory.add("complexObject", 
+                     complexObject);</em>
+</code>
+</pre>
+<p>Immediately after <code>add()</code> is called the new location
+will be shown to the user in the browser's URL toolbar as an anchor
+value. For example, after calling
+<code>dhtmlHistory.add("helloworld", "Hello World Data")</code> for
+an AJAX web page that lives at
+<code>http://codinginparadise.org/my_ajax_app</code>, the user
+would see the following in their browser's URL toolbar:</p>
+<pre>
+<code>http://codinginparadise.org/my_ajax_app#helloworld</code>
+</pre>
+<p>They can then bookmark this page; later, if they use this
+bookmark, your AJAX application can read the
+<code>#helloworld</code> value and use it to initialize the web
+page. Location values after the hash are URL encoded and decoded
+transparently by the Really Simple History framework.</p>
+<p><code>historyData</code> is useful for saving more complicated
+state with an AJAX location change than what can easily fit on a
+URL. It is an optional value that can be any JavaScript type, such
+as a <code>Number</code>, <code>String</code>, or
+<code>Object</code>. One example use of this is saving all of the
+text in a rich text editor, for example, if the user navigates away
+from the page. When a user navigates back to this location, the
+browser will return the object to the history change listener.</p>
+<p>Developers can provide a full JavaScript object for
+<code>historyData</code>, with nested objects and arrays
+representing complex state; whatever is allowed by <a href=
+"http://www.crockford.com/JSON/index.html">JSON (JavaScript Object
+Notation</a>) is allowed in the history data, including simple data
+types and the <code>null</code> type. References to DOM objects and
+scriptable browser objects like <code>XmlHttpRequest</code>,
+however, are not saved. Note that <code>historyData</code> is not
+persisted with bookmarks, and disappears if the browser is closed;
+if the browser's cache is cleared; or if the user erases their
+history.</p>
+<p>The last step in working with <code>dhtmlHistory</code> is the
+<code>isFirstLoad()</code> method. In some browsers, if you
+navigate to a web page, jump to a different page, and then press
+the back button to return to the initial site, the first page will
+completely reload and fire an <code>onload</code> event. This can
+create havoc with code that wants to initialize the page in a
+certain way the first time it loads, but not on subsequent reloads
+of the page. The <code>isFirstLoad()</code> method makes it
+possible to differentiate between the very first time a web page
+has loaded versus a false load event fired if the user navigates
+back to a saved web page in their browser's history.</p>
+<p>In the example code, we only want to add history events the
+first time a page has loaded; if the user presses the back button
+to return to the page after it has loaded, we do not want to re-add
+all the history events:</p>
+<pre>
+<code>window.onload = initialize;
+    
+function initialize() {
+  // initialize the DHTML History
+  // framework
+  dhtmlHistory.initialize();
+  
+  // subscribe to DHTML history change
+  // events
+  dhtmlHistory.addListener(historyChange);
+      
+  <em>// if this is the first time we have
+  // loaded the page...
+  if (dhtmlHistory.isFirstLoad()) {</em>
+    debug("Adding values to browser "
+          + "history", false);
+    // start adding history
+    dhtmlHistory.add("helloworld", 
+                     "Hello World Data");
+    dhtmlHistory.add("foobar", 33);
+    dhtmlHistory.add("boobah", true);
+      
+    var complexObject = new Object();
+    complexObject.value1 = 
+                  "This is the first value";
+    complexObject.value2 = 
+                  "This is the second data";
+    complexObject.value3 = new Array();
+    complexObject.value3[0] = "array 1";
+    complexObject.value3[1] = "array 2";
+      
+    dhtmlHistory.add("complexObject", 
+                     complexObject);
+</code>
+</pre>
+<p>Let's move on to using the <code>HistoryStorage</code> class.
+Like <code>DhtmlHistory</code>, <code>HistoryStorage</code> exposes
+its functionality through a single, global object named
+<code>historyStorage</code>. This object has several methods that
+simulate a <a href="http://en.wikipedia.org/wiki/Hashtable">hash
+table</a>, such as <code>put(keyName, keyValue)</code>,
+<code>get(keyName)</code>, and <code>hasKey(keyName)</code>. Key
+names must be strings, while key values can be sophisticated
+JavaScript objects or even strings filled with XML. In our example
+source code, we <code>put()</code> simple XML into
+<code>historyStorage</code> the first time the page is loaded:</p>
+<pre>
+<code>window.onload = initialize;
+    
+function initialize() {
+  // initialize the DHTML History
+  // framework
+  dhtmlHistory.initialize();
+  
+  // subscribe to DHTML history change
+  // events
+  dhtmlHistory.addListener(historyChange);
+      
+  // if this is the first time we have
+  // loaded the page...
+  if (dhtmlHistory.isFirstLoad()) {
+    debug("Adding values to browser "
+          + "history", false);
+    // start adding history
+    dhtmlHistory.add("helloworld", 
+                     "Hello World Data");
+    dhtmlHistory.add("foobar", 33);
+    dhtmlHistory.add("boobah", true);
+      
+    var complexObject = new Object();
+    complexObject.value1 = 
+                  "This is the first value";
+    complexObject.value2 = 
+                  "This is the second data";
+    complexObject.value3 = new Array();
+    complexObject.value3[0] = "array 1";
+    complexObject.value3[1] = "array 2";
+      
+    dhtmlHistory.add("complexObject", 
+                     complexObject);
+                     
+    <em>// cache some values in the history
+    // storage
+    debug("Storing key 'fakeXML' into " 
+          + "history storage", false);
+    var fakeXML = 
+      '&lt;?xml version="1.0" '
+      +      'encoding="ISO-8859-1"?&gt;'
+      +      '&lt;foobar&gt;'
+      +         '&lt;foo-entry/&gt;'
+      +      '&lt;/foobar&gt;';
+    historyStorage.put("fakeXML", fakeXML);</em>
+  } 
+</code>
+</pre>
+<p>Afterwards, if the user navigates away from the page and then
+returns through their back button, we can extract our stored value
+using the <code>get()</code> method or check for its existence
+using <code>hasKey()</code>:</p>
+<pre>
+<code>window.onload = initialize;
+    
+function initialize() {
+  // initialize the DHTML History
+  // framework
+  dhtmlHistory.initialize();
+  
+  // subscribe to DHTML history change
+  // events
+  dhtmlHistory.addListener(historyChange);
+      
+  // if this is the first time we have
+  // loaded the page...
+  if (dhtmlHistory.isFirstLoad()) {
+    debug("Adding values to browser "
+          + "history", false);
+    // start adding history
+    dhtmlHistory.add("helloworld", 
+                     "Hello World Data");
+    dhtmlHistory.add("foobar", 33);
+    dhtmlHistory.add("boobah", true);
+      
+    var complexObject = new Object();
+    complexObject.value1 = 
+                  "This is the first value";
+    complexObject.value2 = 
+                  "This is the second data";
+    complexObject.value3 = new Array();
+    complexObject.value3[0] = "array 1";
+    complexObject.value3[1] = "array 2";
+      
+    dhtmlHistory.add("complexObject", 
+                     complexObject);
+                     
+    // cache some values in the history
+    // storage
+    debug("Storing key 'fakeXML' into " 
+          + "history storage", false);
+    var fakeXML = 
+      '&lt;?xml version="1.0" '
+      +      'encoding="ISO-8859-1"?&gt;'
+      +      '&lt;foobar&gt;'
+      +         '&lt;foo-entry/&gt;'
+      +      '&lt;/foobar&gt;';
+    historyStorage.put("fakeXML", fakeXML);
+  } 
+  
+  <em>// retrieve our values from the history
+  // storage
+  var savedXML = 
+              historyStorage.get("fakeXML");
+  savedXML = prettyPrintXml(savedXML);
+  var hasKey = 
+           historyStorage.hasKey("fakeXML");
+  var message =
+    "historyStorage.hasKey('fakeXML')="
+    + hasKey + "&lt;br&gt;"
+    + "historyStorage.get('fakeXML')=&lt;br&gt;"
+    + savedXML;
+  debug(message, false);</em>
+}
+</code>
+</pre>
+<p><code>prettyPrintXml()</code> is a utility method defined in the
+<a href="examples/simple/src/simple-src.html">full example source
+code</a>; this function prepares the simple XML to be displayed to
+the web page for debugging.</p>
+<p>Note that data is only persisted in terms of this page's
+history; if the browser is closed, or if the user opens a new
+window and types in the AJAX application's address again, this
+history data is not available to the new web page. History data is
+only persisted in terms of the back and forward buttons and
+disappears when the user closes the browser or clears their
+cache.</p>
+<p>Our simple example is now finished. <a href=
+"examples/simple/simple.html">Demo it</a> or see the full source
+code: <a href="examples/simple/src"><i>simple/</i></a>, <a href=
+"examples/simple/src/simple-src.html"><i>simple.html</i></a>.</p>
+<h3><a name="example2" id="example2">Example 2</a></h3>
+<p>The second example highlights advanced use of the
+<code>DhtmlHistory</code> and <code>HistoryStorage</code> classes
+in a real world application. In the second application we create an
+AJAX web page with a series of topic links; when topics are
+selected, their contents are remotely loaded and shown on the
+right-hand side of the page without performing a full page
+refresh:</p>
+<p><a href=
+"http://localhost/resources/advanced_screencast/advanced_screencast.html">
+<img alt=
+"Advanced Example Screenshot, showing menu of topics on the left and selected topic content on the right"
+src=
+"http://localhost/resources/advanced_screencast/advanced_screencast_thumbnail.gif" /></a><br />
+
+<i>Figure 1. Advanced Example Screenshot (Click for Screen cast of
+User Interacting With Example)</i></p>
+<p>The example is somewhat arbitrary and could be created with
+other, simpler technologies, such as using an iframe and hyperlinks
+that target the iframe. This example, however, is straightforward
+enough to illustrate how to use the Really Simple History API in an
+advanced way for controlling history, providing bookmarking, and
+caching state that is expensive to reload from the server. It is
+meant to provide cut and paste code for more advanced AJAX
+applications.</p>
+<p>The example application consists of four major files: <a href=
+"examples/advanced/src/advanced-src.html"><i>advanced.html</i></a>,
+<a href=
+"examples/advanced/src/advanced-src.css.html"><i>advanced.css</i></a>,
+<a href=
+"examples/advanced/src/advanced-src.js.html"><i>advanced.js</i></a>,
+and <a href=
+"examples/advanced/src/topics-src.xml.html"><i>topics.xml</i></a>.
+We also use three frameworks to accelerate development: the
+<code>DhtmlHistory</code> and <code>HistoryStorage</code> APIs; the
+<a href="http://cross-browser.com/">X DHTML Library</a>, an open
+source toolkit that eases cross-browser DHTML; and <a href=
+"http://sarissa.sourceforge.net/doc/">Sarissa</a>, an open source
+API for working with <code>XmlHttpRequest</code> and XML.</p>
+<p>As users select topics in the left hand menu, we fetch the
+topic's contents in the background and use the
+<code>DhtmlHistory</code> API to record bookmarkable history. When
+the page is initially loaded, we retrieve the list of available
+topics from an XML file and cache them locally using the
+<code>HistoryStorage</code> API, using this XML file to build up
+our user interface dynamically.</p>
+<p>A complete walkthrough of the advanced example is beyond the
+scope of this article; however, I have created a blog post that
+breaks down this example piece by piece titled <a href="http://codinginparadise.org/weblog/2005/09/ajax-how-to-handle-bookmarks-and-back.html">
+"AJAX: Bookmarks and
+Back Buttons, Advanced Example."</a></p>
+<p><a href="examples/advanced/advanced.html">Demo</a> the advanced
+application or see the source code: <a href=
+"examples/advanced/src"><i>advanced/</i></a>, <a href=
+"examples/advanced/src/advanced-src.html"><i>advanced.html</i></a>,
+<a href=
+"examples/advanced/src/advanced-src.css.html"><i>advanced.css</i></a>,
+<a href=
+"examples/advanced/src/advanced-src.js.html"><i>advanced.js</i></a>,
+<a href=
+"examples/advanced/src/topics-src.xml.html"><i>topics.xml</i></a>.</p>
+<h3><a name="conclusion" id="conclusion">Conclusion</a></h3>
+<p>You have now learned to use the Really Simple History API to
+make your AJAX applications respect bookmarks and the back and
+forward buttons, and have two full examples that can be used as
+scaffolding for creating your own applications. I look forward to
+seeing your AJAX inventions out in the wild, complete with
+bookmarks and history support.</p>
+<h3><a name="footnotes" id="footnotes">Footnotes</a></h3>
+<ol>
+<li><a name="footnote1" id="footnote1">For details on why Safari is
+not supported please see the weblog post</a> <a href=
+"http://codinginparadise.org/weblog/2005/09/safari-no-dhtml-history-possible.html">
+"Safari: No DHTML History Possible."</a></li>
+<li><a name="footnote2" id="footnote2">The following AJAX libraries
+and techniques address bookmarking and the back button in AJAX
+applications:</a> <a href=
+"http://www.backbase.com/#dev/tech/002_bookmarks.xml[0]">Backbase</a>,
+<a href="http://dojotoolkit.org/intro_to_dojo_io.html">Dojo</a>,
+Mike Stenhouse's <a href=
+"http://www.contentwithstyle.co.uk/Articles/38/fixing-the-back-button-and-enabling-bookmarking-for-ajax-apps">
+"Fixing the Back Button and Enabling Bookmarking for AJAX Apps"</a>
+article, and Erik Arvidsson's <a href=
+"http://erik.eae.net/playground/hashlistener.zip">Hash Listener</a>
+library.</li>
+<li><a name="footnote3" id="footnote3"></a>
+<p>The following major issues affect all of the AJAX history
+libraries I have evaluated, other than the Really Simple History
+framework.</p>
+<p>First, some history frameworks, such as Dojo, use JavaScript
+objects to store an internal representation of the state of an AJAX
+application's history; unfortunately, browsers completely clear out
+all JavaScript objects when a user leaves a page. If a user
+interacts with an AJAX application, navigates to Google, and then
+returns to their original AJAX page, the AJAX history framework's
+internal state is erased and becomes confused.</p>
+<p>Another bug that affects many frameworks is that they do not
+differentiate between the first time a page truly loads versus
+"fake" page loads. In many browsers, when a user first loads an
+AJAX application, the browser will throw an <code>onload</code>
+event. Later, if the user navigates to a different web site and
+then returns using the back button, the browser will throw a new
+<code>onload</code> event even though the page already loaded the
+first time. Many subtle bugs can occur in AJAX history frameworks
+unless these two kinds of load events are differentiated.</p>
+<p>Finally, I have not seen an AJAX history framework that will
+detect when a user has manually entered a new hash location in
+Internet Explorer.</p>
+</li>
+<li><a name="footnote4" id="footnote4">The Really Simple History
+framework uses several techniques to solve the bugs identified
+in</a> <a href="#footnote2">[2]</a>. A full description of these
+techniques is beyond the scope of this article. The primary
+mechanism, however, is achieved using <code>DhtmlHistory</code>, a
+JavaScript class that allows developers to store history state
+after the browser has left a web page. This data is persisted
+between page loads using the auto save capability of web forms; see
+my blog post <a href=
+"http://codinginparadise.org/weblog/2005/08/ajax-tutorial-saving-session-across.html">
+"AJAX Tutorial: Saving Session Across Page Loads Without Cookies,
+On The Client Side"</a> for implementation details.
+<code>DhtmlHistory</code> wraps the auto save trick with an easy
+hash table API for developers, and the main RSH framework then uses
+the <code>DhtmlHistory</code> class to implement stateless tracking
+of history; variables that allow the detection of fake versus real
+page load events; and more.</li>
+</ol>
+<h3><a name="resources" id="resources">Resources</a></h3>
+<ul>
+<li><a href="downloads/examples.zip">Download</a> [zip file] all
+sample code for this article.</li>
+<li><a href="downloads/framework.zip">Download</a> [zip file] the
+Really Simple History framework.</li>
+<li><a href="examples/simple/simple.html">Demo</a> example 1, or
+see its full source code: <a href="examples/simple/src"><i>simple/</i></a>, <a href=
+"examples/simple/src/simple-src.html"><i>simple.html</i></a></li>
+<li><a href="examples/advanced/advanced.html">Demo</a> example 2,
+the advanced application, or see the source code: <a href=
+"examples/advanced/src"><i>advanced/</i></a>, <a href=
+"examples/advanced/src/advanced-src.html"><i>advanced.html</i></a>,
+<a href=
+"examples/advanced/src/advanced-src.css.html"><i>advanced.css</i></a>,
+<a href=
+"examples/advanced/src/advanced-src.js.html"><i>advanced.js</i></a>,
+<a href=
+"examples/advanced/src/topics-src.xml.html"><i>topics.xml</i></a></li>
+<li><a href="http://codinginparadise.org/weblog/2005/09/ajax-how-to-handle-bookmarks-and-back.html">
+"AJAX: Bookmarks and Back Buttons, Advanced Example"</a> - Blog
+post providing in-depth code walkthrough of the advanced
+example.</li>
+<li><a href=
+"http://codinginparadise.org/weblog/2005/09/safari-no-dhtml-history-possible.html">
+"Safari: No DHTML History Possible"</a> - Blog post on why Safari
+is not supported by the Really Simple History framework.</li>
+<li><a href=
+"http://codinginparadise.org/weblog/2005/08/ajax-tutorial-saving-session-across.html">
+"AJAX Tutorial: Saving Session Across Page Loads Without Cookies,
+On The Client Side"</a> - Implementation details on some of the
+techniques the Really Simple History framework uses to persist
+history data.</li>
+<li><a href="http://codinginparadise.org">Coding in Paradise</a> -
+The author's weblog.</li>
+<li><a href="http://www.crockford.com/JSON/index.html">JSON
+(JavaScript Object Notation</a> - Reference on serialization
+mechanism used to save complex JavaScript objects into the
+<code>DhtmlHistory</code> and <code>HistoryStorage</code>
+classes.</li>
+<li><a href="http://en.wikipedia.org/wiki/AJAX">Learn more about
+AJAX</a></li>
+<li><a href=
+"http://sourcelabs.com/ajb/archives/2005/05/ajax_mistakes.html">Alex
+Bosworth on AJAX Mistakes</a></li>
+<li><a href="http://www.backbase.com/">Backbase</a> - An advanced,
+AJAX toolkit that provides history functionality.</li>
+<li><a href="http://www.dojotoolkit.org">The Dojo Toolkit</a> - An
+open source component framework and AJAX library.</li>
+<li><a href=
+"http://www.contentwithstyle.co.uk/Articles/38/fixing-the-back-button-and-enabling-bookmarking-for-ajax-apps">
+"Fixing the Back Button and Enabling Bookmarking for AJAX Apps"</a>
+- Alternative approach to history in AJAX applications.</li>
+<li><a href="http://erik.eae.net/playground/hashlistener.zip">Hash
+Listener</a> library - Erik Arvidsson's experiments with
+controlling browser history and bookmarking.</li>
+<li><a href="http://cross-browser.com/">X DHTML Library</a> - open
+source toolkit that eases cross-browser DHTML; used in the <a href=
+"#example2">advanced example</a>.</li>
+<li><a href="http://sarissa.sourceforge.net/doc/">Sarissa</a> -
+open source API for working with <code>XmlHttpRequest</code> and
+XML; used in the <a href="#example2">advanced example</a>.</li>
+</ul>
+</body>
+</html>

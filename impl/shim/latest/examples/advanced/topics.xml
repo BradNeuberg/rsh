@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<topics>
+   <topic id="topic1" 
+          title="Topic 1" 
+          src="topic1.html" 
+          default="true"/>
+          
+   <topic id="topic2" 
+          title="Topic 2" 
+          src="topic2.html"/>
+          
+   <topic id="topic3" 
+          title="Topic 3" 
+          src="topic3.html"/>
+</topics>

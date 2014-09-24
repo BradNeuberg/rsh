@@ -1,0 +1,418 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=windows-1250">
+  <meta name="generator" content="PSPad editor, www.pspad.com">
+  <title>Really Simple History for AJAX Applications</title>
+  <style type="text/css">
+   h1 { text-align: center; margin-bottom: 0.3em; font-size: 26pt; }
+   .slogan { font-style: italic; text-align: center; margin-bottom: 0.5em; font-size: 18pt; } 
+   div label { font-weight: bold; }
+   em { font-weight: bold; font-style: normal; }
+   .issue { font-weight: bold; color: red; }
+  </style>
+  </head>
+  <body>
+                        
+<h1>Really Simple History</h1>
+<div class="slogan">Bookmarking and Browser History Support for AJAX Applications
+</div>
+<div id="author">
+   <label>Author:</label> Brad Neuberg, <a href="mailto:bkn3@columbia.edu">bkn3@columbia.edu</a>, 
+   <a href="http://codinginparadise.org">http://codinginparadise.org</a>
+</div>
+<div id="version">
+   <label>Specification version in this document:</label> 0.01
+</div>
+<div id="last-updated">
+   <label>Last updated:</label> 9-5-2005
+</div>
+<div id="latest-version">
+      <a href="http://codinginparadise.org/projects/dhtml_history/spec/latest.html">
+         View Latest Specification Document
+      </a>
+</div>
+
+<p>This document is a strawman proposal for a very simple browser-supported
+API for AJAX applications to support bookmarking and the back and forward buttons. 
+It is meant to be implemented by both browser manufacturers as well as developers
+creating emulation libraries to provide such support.
+It is in alpha draft form and is open to comments. It's operating
+principles are Keep It Simple Stupid (KISS) and to create APIs that work in the real world.</p>
+
+<h2>The Problem</h2>
+<p>AJAX applications are essentially entire web applications contained within a single
+web page. By default, they do not work with browsers' bookmarking and back and forward
+button capabilities. There is no way for a user to bookmark the particular state of an AJAX
+web page, such as after a search request, and pressing the back or forward buttons after
+working with an AJAX application will cause the browser to completely leave the AJAX web page,
+confusing users and creating usability problems.</p>
+
+<p>In order to truly be effective AJAX applications must support these abilities. As a user
+works with an AJAX page, selecting functions and changing the system's state, the browser's URL
+location bar should change to a degree necessary for the user to bookmark
+the current state or send it to friends via email. Every change to the browser's location while within
+the AJAX page should be saved into the history, so that as users press the back and forward buttons
+the browser will jump between the various locations that have been recorded. Developers should have full
+control recording history changes while within their AJAX web page; a developer should simply be able
+to provide a new in-page history location and history data. When a history change occurs, the developer
+should receive a callback with the new location and any associated history data.</p>
+
+<p>An AJAX history API should not force programmers to interpret history changes in a particular way; it
+should completely divorce network activity from in-page history changes. In AJAX systems, network activity
+through XmlHttpRequest or publish-subscribe APIs are not necessarily appropriate to be placed into the
+browser's DHTML history; in contrast, user activity that produces no network activity is sometimes important
+to store into the AJAX history.</p>
+
+<p>When a developer receives a history change event, they should have the full power to interpret it in a way
+that is appropriate for their application. Some AJAX applications will use the back and forward buttons
+as simulated Undo/Redo systems, while others will only record higher-level user events into the history
+and bookmark systems. The decision of how to interpret history change events must be left to the application
+developer; an AJAX history API should only give the ability to intercept in-page history events and not
+interpret the meaning of these events.</p>
+
+<p>Developers are also not interested in the manner in which a history change event occurs; i.e. whether
+it was through the back button, the forward button, by going through a browser's list of history pages,
+etc. Programmers are simply interested in being notified of the existence of an in-page history change.</p>   
+
+<p>A major requirement for this API is that it can be emulated through shims for browsers that do
+not natively support the API. This requirement significantly influences the
+shape of the API we can create, since most browser's do not allow emulation libraries to extend
+the available native event types, add methods to the <code>history</code> object, etc.
+Emulation shims are not expected to provide all the features of this API; where possible, developers
+are given simple methods to query on whether a particular feature is supported.</p>
+
+<h2>The Solution</h2>
+<p>Really Simply History introduces the notion of an in-page DHTML history that is separate from a browser's standard
+cross-page history object. It does this by adding a new member to the <code>window</code> object named 
+<code>dhtmlHistory</code>:</p>
+
+<code>window.dhtmlHistory</code>
+
+<p>Since the <code>window</code> object is the root level object and is implicit, developers can
+leave off the <code>window</code> reference when referring to the <code>dhtmlHistory</code> object.</p>
+
+<p>The <code>dhtmlHistory</code> object has the following primary methods:</p>
+
+<pre><code>addListener(callback)
+removeListener(callback)
+add(newLocation, historyData)
+hasHistory()
+</code></pre>
+
+<p>It also has the following support methods that are useful in some contexts:</p>
+
+<pre><code>isInternational()
+supportsHistoryData()
+getVersion()
+</code></pre>
+
+<p>Let's start by seeing how a programmer would actually use this API. This is in contrast
+to usual specifications which are full of hairy context free grammars
+and obtuse verbiage; this should keep us honest and ensure we actually have a
+usable API. Here is the complete
+code for an example usage of the <code>dhtmlHistory</code> API; we will break down and discuss
+each piece:</p>
+
+<pre><code><html>
+   &lt;head&gt;
+      &lt;script language="JavaScript"&gt;
+         function initialize() {
+            // subscribe to DHTML history change
+            // events
+            dhtmlHistory.addListener(historyChange);
+            
+            // if this is the first time we have
+            // loaded the page...
+            if (dhtmlHistory.hasHistory() == false) {
+               // start adding history
+               dhtmlHistory.add("helloworld", "Hello World Data");
+               dhtmlHistory.add("foobar", 33);
+               dhtmlHistory.add("boobah", true);
+            
+               var historyData = new Object();
+               historyData.value1 = "This is the first value";
+               historyData.value2 = "This is the second data";
+            
+               dhtmlHistory.add("moreStuff", historyData);
+            } 
+         }
+         
+         /** Our callback to receive history change
+             events. */
+         function historyChange(newLocation, historyData) {
+            alert("A history change has occured: newLocation="+newLocation
+                  + ", historyData="+historyData);
+         }
+      &lt;/script&gt;
+   &lt;/head&gt;
+   
+   &lt;body onload="initialize()"&gt;
+   &lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+
+<p>A developer begins by subscribing to DHTML history change events after the page is finished
+loading, using the <code>addListener</code> method. This method takes a single argument, which
+is a JavaScript callback function. The callback function will receive two arguments whenever a
+DHTML history change event has occurred: the new location of the page, and any optional history 
+data that might be associated with this event:</p>
+
+<pre><code><html>
+   &lt;head&gt;
+      &lt;script language="JavaScript"&gt;
+         function initialize() {
+            // subscribe to DHTML history change
+            // events
+            <em>dhtmlHistory.addListener(historyChange);</em>
+            
+            // if this is the first time we have
+            // loaded the page...
+            if (dhtmlHistory.hasHistory() == false) {
+               // start adding history
+               dhtmlHistory.add("helloworld", "Hello World Data");
+               dhtmlHistory.add("foobar", 33);
+               dhtmlHistory.add("boobah", true);
+            
+               var historyData = new Object();
+               historyData.value1 = "This is the first value";
+               historyData.value2 = "This is the second data";
+            
+               dhtmlHistory.add("moreStuff", historyData);
+            } 
+         }
+         
+         <em>/** Our callback to receive history change
+             events. */
+         function historyChange(newLocation, historyData) {
+            alert("A history change has occured: newLocation="+newLocation
+                  + ", historyData="+historyData);
+         }</em>
+      &lt;/script&gt;
+   &lt;/head&gt;
+   
+   &lt;body onload="initialize()"&gt;
+   &lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+
+<p>A developer add's history events using the <code>add()</code> method. Adding a history
+event involves specifying a new location for the history change, such as "edit:SomePage", as well
+as providing an optional <code>historyData</code> value that will be stored with this event:</p>
+
+<pre><code><html>
+   &lt;head&gt;
+      &lt;script language="JavaScript"&gt;
+         function initialize() {
+            // subscribe to DHTML history change
+            // events
+            dhtmlHistory.addListener(historyChange);
+            
+            // if this is the first time we have
+            // loaded the page...
+            if (dhtmlHistory.hasHistory() == false) {
+               <em>// start adding history
+               dhtmlHistory.add("helloworld", "Hello World Data");
+               dhtmlHistory.add("foobar", 33);
+               dhtmlHistory.add("boobah", true);
+            
+               var historyData = new Object();
+               historyData.value1 = "This is the first value";
+               historyData.value2 = "This is the second data";
+            
+               dhtmlHistory.add("moreStuff", historyData);</em>
+            } 
+         }
+         
+         /** Our callback to receive history change
+             events. */
+         function historyChange(newLocation, historyData) {
+            alert("A history change has occured: newLocation="+newLocation
+                  + ", historyData="+historyData);
+         }
+      &lt;/script&gt;
+   &lt;/head&gt;
+   
+   &lt;body onload="initialize()"&gt;
+   &lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+
+<p>The new location will be shown to the user in the browser's URL toolbar, as an anchor value. For
+example, after calling <code>dhtmlHistory.add("helloworld", "Hello World Data")</code> for an
+AJAX web page that lives at <code>http://codinginparadise.org/my_ajax_app</code>, the user would
+see the following in their browser's URL toolbar:</p>
+
+<pre><code>http://codinginparadise.org/my_ajax_app#helloworld</code></pre>
+
+<p>They could then bookmark this page; later, if they use this bookmark, your AJAX application can read
+the <code>#helloworld</code> value and use it to initialize the web page. Location values after the
+hash will be URL encoded and decoded transparently by the <code>dhtmlHistory</code> framework.</p>
+
+<p><code>historyData</code> is useful for saving more complicated state with an AJAX location change than what
+can easily fit on to a URL. It is an optional value that can be any JavaScript type, such as a Number,
+String, or Object. One example use of this is saving all of the text in a rich text editor,
+for example, if the user navigates away from the page. When a user navigates back to this location, the 
+browser will return the object
+to a history change listener.</p>
+
+<p>Developers can provide a full JavaScript object for <code>historyData</code>, with nested objects and
+arrays representing complex state; whatever is allowed by <a href="http://www.json.org">JSON (JavaScript Object Notation)</a> is allowed
+in the history data, including simple data types and the <code>null</code> type. References to DOM objects and scriptable browser objects
+like XmlHttpRequest, however, will not be saved. Note that <code>historyData</code> is not saved with bookmarks, and disappears
+when the browser is closed, or if the browser's cache or history are cleared or full.</p> 
+
+<div class="issue">
+   Issue: Is there a size limit for the location change value? How about for history data?
+</div>
+
+<p>Note that most emulation shims for this API, as opposed to native support in the browser,
+will probably not have the ability to return <code>historyData</code>; this is due to the fact
+that saving history data after the browser has left a page is very difficult and unreliable from
+within an emulation library. To create code that
+is compatible for all browsers that use this API, whether through native support or emulation, developers
+can either choose to not use history data:</p>
+
+<pre><code>dhtmlHistory.add("helloworld");
+...
+function historyChange(newLocation) {
+   alert("History change, newLocation="+newLocation);
+}
+</code></pre> 
+
+<p>Or can choose to use the <code>supportsHistoryData()</code> method, which returns true if a browser
+can store history data and false if it can not:</p>
+
+<pre><code>if (dhtmlHistory.supportsHistoryData()) {
+   dhtmlHistory.add("helloworld", someData);
+}
+else {
+   dhtmlHistory.add("helloworld");
+}
+</code></pre>
+
+<p>The last step in working with <code>dhtmlHistory</code> is the <code>hasHistory()</code> method.
+In some browsers, if you navigate to a web page, jump to another web site, and then press the back button
+to return to the initial web site, the initial web page will completely reload and fire an onload event. 
+This can create havoc with code that wants to initialize the page in a certain way only the first time 
+it is loaded; afterwards, if there is history or certain data has already been loaded from a remote 
+web server, a
+developer wishes to not repeat a certain action. The <code>hasHistory()</code> method makes it possible
+to differentiate between the very first time a web
+page has loaded versus after it has already been loaded and possibly contains history data. As soon as a
+page has loaded the first time it has DHTML history, namely the single page itself. In the example code, we
+only want to add test history events the first time a page has loaded; if the user presses the back button
+to return to the first page, we do not want to re-add all the history events:</p>
+
+<pre><code><html>
+   &lt;head&gt;
+      &lt;script language="JavaScript"&gt;
+         function initialize() {
+            // subscribe to DHTML history change
+            // events
+            dhtmlHistory.addListener(historyChange);
+            
+            // if this is the first time we have
+            // loaded the page...
+            <em>if (dhtmlHistory.hasHistory() == false) {
+               // start adding history
+               dhtmlHistory.add("helloworld", "Hello World Data");
+               dhtmlHistory.add("foobar", 33);
+               dhtmlHistory.add("boobah", true);
+            
+               var historyData = new Object();
+               historyData.value1 = "This is the first value";
+               historyData.value2 = "This is the second data";
+            
+               dhtmlHistory.add("moreStuff", historyData);
+            }</em> 
+         }
+         
+         /** Our callback to receive history change
+             events. */
+         function historyChange(newLocation, historyData) {
+            alert("A history change has occured: newLocation="+newLocation
+                  + ", historyData="+historyData);
+         }
+      &lt;/script&gt;
+   &lt;/head&gt;
+   
+   &lt;body onload="initialize()"&gt;
+   &lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+
+<p>An alternative method for subscribing to history change events is supported, using the
+<code>onhistorychange</code> attribute directory on a document's <code>body</code> tag:</p>
+
+<pre><code>&lt;body onhistorychange="alert('history change')"&gt;</code></pre>
+
+<p>A developer can register a callback using <code>onhistorychange</code> just as they would
+using <code>addListener()</code>; note that using the <code>onhistorychange</code> method will
+clear out any listeners added using <code>addListener()</code>.</p>
+
+<p>Developers can use the <code>getVersion</code> method to find out which version of the
+Really Simple History API is supported. The value returned should be the specification version as a string,
+such as "0.01".</p>
+
+<p>As a final note to implementors, history change events are fired from the 
+following user actions; they are not fired for any other 
+actions not on this list:</p>
+
+<ul>
+   <li>Pressing the back or forward buttons</li>
+   <li>Choosing the page from a list of history URLs using a browser user-interface</li>
+   <li>If the user is at an AJAX web page, and manually changes the hash value in the browser's
+   location, a history change event will be fired with null <code>historyData</code></li>
+   <li>If the user is at an AJAX web page, and chooses a bookmark that is on this web page that contains
+   a new hash value, a history change event will be fired with null <code>historyData</code></li>
+</ul>
+
+<h2>Other Issues</h2>
+
+<h3>Text Encoding</h3>
+<p>The default encoding for location values and JavaScript strings is UTF-8. The text encoding for 
+emulation shims for browsers that do not natively support the DhtmlHistory API is
+unspecified, however; internationalized values may not necessarily work in these browsers. The
+<code>isInternational()</code> method is provided for programmers to query
+whether the browser they are working with supports internationalization in the context of DHTML history:</p>
+
+<pre><code>if (dhtmlHistory.isInternational()) {
+   // store some UTF-8 string in our DHTML history
+}
+else {
+   alert("This browser does not support internationalization");
+}
+</code></pre>    
+
+<div class="issue">
+   Issue: What is the default encoding for JavaScript
+strings? Can the encoding be specified when creating
+a JavaScript string like in Java?
+</div>
+<div class="issue">
+   Issue: What is the default encoding for anchor values?
+</div>   
+
+
+<h2>FAQ</h2>
+
+<h4><a name="use_w3c_events">Why Don't You Use W3C Events, the 
+Native <code>History</code> Object, etc.?</a></h4>
+<p>I have kept deep browser integration to a minimum to support browser emulation shims, which may
+not be able to hook new event types into the browser through the W3C <code>addEventListener</code>,
+or which may not have permission to add methods to the <code>history</code> object.</p>
+
+<h4><a name="extend_history">Why Not Just Extend the <code>History</code> object?</a></h4>
+
+<p>There really is a difference between the browser's <code>history</code> object and
+<code>dhtmlHistory</code>. A web page has permission (and interest) in subscribing to history changes
+within the context of its own document; if a user jumps from my AJAX application to Google, my application
+is not interested in that. If the user jumps back from Google to my AJAX application, I <em>am</em> interested
+in this. For this reason we separate out cross-page history from in-page history.</p>
+
+<p>Extending the <code>history</code> object also creates trouble for browser emulation shims; 
+see <a href="#use_w3c_events">Why Don't You Use W3C Events, the Native <code>History</code> Object, etc.</a>
+for more information.</p>
+  </body>
+</html>

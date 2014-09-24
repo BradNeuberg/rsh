@@ -1,0 +1,171 @@
+<!doctype html public "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<title>simple.html - Source Code</title>
+</head>
+<body>
+<pre><code>
+&lt;!DOCTYPE HTML PUBLIC 
+               "-//W3C//DTD HTML 4.0 Strict//EN"&gt;
+               
+&lt;!-- 
+   Copyright (c) 2005, Brad Neuberg, 
+   bkn3@columbia.edu
+   http://codinginparadise.org
+   
+   Permission is hereby granted, free of charge, 
+   to any person obtaining a copy of this software
+   and associated documentation files (the
+   "Software"), to deal in the Software without 
+   restriction, including without limitation 
+   the rights to use, copy, modify, merge, 
+   publish, distribute, sublicense, and/or sell 
+   copies of the Software, and to permit persons 
+   to whom the Software is furnished to do so, 
+   subject to the following conditions:
+   
+   The above copyright notice and this 
+   permission notice shall be included in all 
+   copies or substantial portions of the Software.
+   
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT 
+   WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
+   INCLUDING BUT NOT LIMITED TO THE WARRANTIES 
+   OF MERCHANTABILITY, FITNESS FOR A PARTICULAR 
+   PURPOSE AND NONINFRINGEMENT. 
+   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+   HOLDERS BE LIABLE FOR ANY 
+   CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER 
+   IN AN ACTION OF CONTRACT, TORT 
+   OR OTHERWISE, ARISING FROM, OUT OF OR IN 
+   CONNECTION WITH THE SOFTWARE OR 
+   THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+--&gt;    
+           
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;!-- Load the DhtmlHistory and 
+         HistoryStorage APIs --&gt;
+    &lt;script type="text/javascript"
+            src="../../framework/dhtmlHistory.js"&gt;
+    &lt;/script&gt;
+     
+    &lt;!-- Our application's JavaScript --&gt;
+    &lt;script language="JavaScript"&gt;
+      window.onload = initialize;
+    
+      function initialize() {
+        // initialize the DHTML History
+        // framework
+        dhtmlHistory.initialize();
+        
+        // subscribe to DHTML history change
+        // events
+        dhtmlHistory.addListener(historyChange);
+            
+        // if this is the first time we have
+        // loaded the page...
+        if (dhtmlHistory.isFirstLoad()) {
+          debug("Adding values to browser "
+                + "history", false);
+          // start adding history
+          dhtmlHistory.add("helloworld", 
+                           "Hello World Data");
+          dhtmlHistory.add("foobar", 33);
+          dhtmlHistory.add("boobah", true);
+            
+          var complexObject = new Object();
+          complexObject.value1 = 
+                        "This is the first value";
+          complexObject.value2 = 
+                        "This is the second data";
+          complexObject.value3 = new Array();
+          complexObject.value3[0] = "array 1";
+          complexObject.value3[1] = "array 2";
+            
+          dhtmlHistory.add("complexObject", 
+                           complexObject);
+                           
+          // cache some values in the history
+          // storage
+          debug("Storing key 'fakeXML' into " 
+                + "history storage", false);
+          var fakeXML = 
+            '&lt;?xml version="1.0" '
+            +      'encoding="ISO-8859-1"?&gt;'
+            +      '&lt;foobar&gt;'
+            +         '&lt;foo-entry/&gt;'
+            +      '&lt;/foobar&gt;';
+          historyStorage.put("fakeXML", fakeXML);
+        } 
+        
+        // retrieve our values from the history
+        // storage
+        var savedXML = 
+                    historyStorage.get("fakeXML");
+        savedXML = prettyPrintXml(savedXML);
+        var hasKey = 
+                 historyStorage.hasKey("fakeXML");
+        var message =
+          "historyStorage.hasKey('fakeXML')="
+          + hasKey + "&lt;br&gt;"
+          + "historyStorage.get('fakeXML')=&lt;br&gt;"
+          + savedXML;
+        debug(message, false);
+      }
+         
+      /** Our callback to receive history change
+          events. */
+      function historyChange(newLocation, 
+                             historyData) {
+        debug("A history change has occurred: "
+              + "newLocation="+newLocation
+              + ", historyData="+historyData, 
+              true);
+      }
+      
+      /** Displays messages to the screen. */
+      function debug(msg, clear) {
+        var output = 
+                document.getElementById("output");
+        if (clear == true)
+          output.innerHTML = "&lt;p&gt;" + msg + "&lt;/p&gt;";
+        else {
+          output.innerHTML += 
+                            "&lt;p&gt;" + msg + "&lt;/p&gt;";
+        }
+      }
+      
+      /** Converts pointy brackets into their
+             HTML escape code equivalents so
+             we can print out XML. */
+         function prettyPrintXml(content) {
+            if (content == null)
+               return null;
+            content = 
+                content.replace(/&lt;/g, "&lt;");
+            content = 
+                content.replace(/&gt;/g, "&gt;&lt;br&gt;");
+            return content;
+         }
+    &lt;/script&gt;
+  &lt;/head&gt;
+   
+  &lt;body&gt;
+    &lt;h1&gt;Simple.html&lt;/h1&gt;
+    
+    &lt;h2&gt;Instructions&lt;/h2&gt;
+    &lt;p&gt;Press the back and forward buttons when 
+       the page is finished loading. Leave the
+       page for a new web site and come 
+       back using the back button, and notice 
+       how the history data is still 
+       persisted.&lt;/p&gt;
+    
+    &lt;h2&gt;Debug Output&lt;/h2&gt;   
+    &lt;div id="output"&gt;&lt;/div&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</code></pre>   
+</body>
+</html> 
